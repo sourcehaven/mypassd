@@ -1,0 +1,61 @@
+import flask
+from flask import Blueprint, request
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
+from flask_sqlalchemy import SQLAlchemy
+from loguru import logger
+
+from mypass.models import User
+
+AuthApi = Blueprint('auth', __name__)
+
+
+@AuthApi.route('/api/auth/registration', methods=['POST'])
+def registration():
+    req = request.json
+    username = req['username']
+    password = req['password']
+    email = req.get('email')
+    forename = req.get('forename')
+    surename = req.get('surename')
+    db: SQLAlchemy = flask.current_app.extensions['sqlalchemy']
+    user = User(username=username, password=password, forename=forename, surename=surename, email=email)
+    db.session.add(user)
+    db.session.commit()
+    return flask.redirect(flask.url_for('auth.login', _method='POST', user_obj=user), 307)
+
+
+@AuthApi.route('/api/auth/login', methods=['POST'])
+def login():
+    request_obj = request.json
+    username = request_obj['username']
+    password = request_obj['password']
+    identity = {'username': username}
+    logger.debug(f'Logging in with identity:\n    {identity}')
+    if db_utils.get_user_login(user=username, pw=password) is not None:
+        access_token = create_access_token(identity=identity, fresh=True)
+        refresh_token = create_refresh_token(identity=identity)
+        return {'access_token': access_token, 'refresh_token': refresh_token}, 201
+    return {'msg': f'AUTHORIZATION FAILURE :: Could not log in user {username}.'}, 401
+
+
+@AuthApi.route('/api/auth/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity, fresh=False)
+    return {
+        'access_token': access_token
+    }, 201
+
+
+@AuthApi.route('/api/auth/logout', methods=['DELETE'])
+@jwt_required(optional=True)
+def logout():
+    logger.debug('Logging out user.')
+    try:
+        jti = get_jwt()['jti']
+        logger.debug(f'Blacklisting token: {jti}.')
+        # blacklisting token ... --> blacklist.add(jti)
+        return '', 204
+    except KeyError:
+        return '', 409
