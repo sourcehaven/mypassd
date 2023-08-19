@@ -1,2 +1,2 @@
-from .entry import VaultEntry
+from .entry import VaultEntry, Tag
 from .user import User

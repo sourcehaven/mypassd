@@ -1,11 +1,13 @@
 from typing import Optional
+from datetime import datetime
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 import sqlalchemy_utils as sau
 
 from mypass import crypto
 from .base import Model
+from . import entry
 
 
 class User(Model):
@@ -13,25 +15,31 @@ class User(Model):
     __table_args__ = {'extend_existing': True}
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(sa.String(255))
-    forename: Mapped[Optional[str]] = mapped_column(sa.Unicode(255))
-    surename: Mapped[Optional[str]] = mapped_column(sa.Unicode(255))
+    username: Mapped[str] = mapped_column(sa.String(255), unique=True)
+    firstname: Mapped[Optional[str]] = mapped_column(sa.Unicode(255))
+    lastname: Mapped[Optional[str]] = mapped_column(sa.Unicode(255))
     email: Mapped[Optional[str]] = mapped_column(sau.EmailType(255))
+    create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
+
     _password: Mapped[str] = mapped_column(sa.String(255), name='password')
     _token: Mapped[str] = mapped_column(sa.String(255), name='token')
     _salt: Mapped[str] = mapped_column(sa.String(255), name='salt')
 
+    vault_entries: Mapped[list[entry.VaultEntry]] = relationship(cascade='all, delete-orphan')
+    tags: Mapped[list[entry.Tag]] = relationship(cascade='all, delete-orphan')
+
+    # noinspection PyShadowingBuiltins
     def __init__(
             self,
-            pk=None,
+            id=None,
             *,
             username=None,
             password=None,
             secretpw=None,
             token=None,
             salt=None,
-            forename=None,
-            surename=None,
+            firstname=None,
+            lastname=None,
             email=None,
             stfu=False
     ):
@@ -39,13 +47,13 @@ class User(Model):
         Model class representing an application user.
 
         Parameters:
-            pk (int | None): primary key (not passed directly)
+            id (int | None): primary key (not passed directly)
             username (str): the username
             password (str): master password which will be hashed
             token (str): one time given, secret token
             salt (str): salt used for password hashing and token encryption
-            forename (str | None): firstname
-            surename (str | None): lastname
+            firstname (str | None): forename
+            lastname (str | None): family name
             email (str | None): email address of the user
             stfu (bool): silence error messages explicitly
         """
@@ -54,7 +62,7 @@ class User(Model):
             raise TypeError('You dont know what you are doing! Use create classmethod instead.')
 
         # noinspection PyTypeChecker
-        self.id = pk
+        self.id = id
         # noinspection PyTypeChecker
         self.username = username
         # noinspection PyTypeChecker
@@ -64,24 +72,23 @@ class User(Model):
         # noinspection PyTypeChecker
         self._salt = salt
         # noinspection PyTypeChecker
-        self.forename = forename
+        self.firstname = firstname
         # noinspection PyTypeChecker
-        self.surename = surename
+        self.lastname = lastname
         # noinspection PyTypeChecker
         self.email = email
         self._secretpw = secretpw
 
     @classmethod
-    def create(cls, pk=None, *, username=None, password=None, forename=None, surename=None, email=None):
+    def create(cls, *, username=None, password=None, firstname=None, lastname=None, email=None):
         """
         Model class representing an application user.
 
         Parameters:
-            pk (int | None): primary key (not passed directly)
             username (str | None): the username
             password (str | None): master password which will be hashed
-            forename (str | None): firstname
-            surename (str | None): lastname
+            firstname (str | None): forename
+            lastname (str | None): family name
             email (str | None): email address of the user
         """
 
@@ -94,14 +101,14 @@ class User(Model):
             secret_token = crypto.encryptsecret(token, pw=password, salt=salt)
             hashed_pw = crypto.hashpw(password, salt)
         return cls(
-            pk=pk, username=username, password=hashed_pw, secretpw=password, token=secret_token, salt=salt,
-            forename=forename, surename=surename, email=email, stfu=True)
+            username=username, password=hashed_pw, secretpw=password, token=secret_token, salt=salt,
+            firstname=firstname, lastname=lastname, email=email, stfu=True)
 
     def __repr__(self):
         return (f'{self.__class__.__name__}(id={self.id}, '
                 f'username={self.username}, '
-                f'forename={self.forename}, '
-                f'surename={self.surename}, '
+                f'firstname={self.firstname}, '
+                f'lastname={self.lastname}, '
                 f'email={self.email}, '
                 f'password={self.password})')
 
@@ -117,8 +124,8 @@ class User(Model):
         """
 
         return User(
-            pk=self.id, username=self.username, password=self._password, secretpw=pw, token=self._token,
-            salt=self._salt, forename=self.forename, surename=self.surename, email=self.email, stfu=True)
+            username=self.username, password=self._password, secretpw=pw, token=self._token,
+            salt=self._salt, firstname=self.firstname, lastname=self.lastname, email=self.email, stfu=True)
 
     @property
     def token(self):
