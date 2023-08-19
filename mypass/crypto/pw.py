@@ -6,7 +6,8 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.hashes import SHA3_512
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-from mypass.crypto import derive_key_from_pw
+from ._com import ITERATIONS
+from .keys import derive_key_from_pw
 
 
 def initpw(nbytes: int = 256, return_bytes: bool = False):
@@ -109,7 +110,7 @@ def gen_master_token_and_salt(pw: str):
 
 
 def hash_pw_bytes(pw: bytes, salt: bytes):
-    kdf = PBKDF2HMAC(SHA3_512(), 64, salt, 160000)
+    kdf = PBKDF2HMAC(SHA3_512(), 64, salt, ITERATIONS)
     encoded_hashed_pw = base64.urlsafe_b64encode(kdf.derive(pw))
     return encoded_hashed_pw
 
@@ -135,5 +136,5 @@ def hashpw(pw, salt):
         raise ValueError('Arguments `pw`, and `salt` should all be bytes or all be str objects.')
 
 
-def checkpw(pw: str, salt: str, pw_hashed: str):
-    return hash_pw_str(pw, salt) == pw_hashed
+def checkpw(pw: str, salt: str, hashedpw: str):
+    return hash_pw_str(pw, salt) == hashedpw

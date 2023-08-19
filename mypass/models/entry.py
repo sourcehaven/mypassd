@@ -1,10 +1,9 @@
 from typing import Optional
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Model
-from .user import User
 
 
 class VaultEntry(Model):
@@ -13,7 +12,6 @@ class VaultEntry(Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(sa.ForeignKey('user.id', ondelete='CASCADE'))
-    user: Mapped[User] = relationship(lazy='joined', innerjoin=True)
     username: Mapped[str] = mapped_column(sa.String(255))
     password: Mapped[str] = mapped_column(sa.String(255))
     salt: Mapped[str] = mapped_column(sa.String(255))
@@ -29,7 +27,7 @@ class VaultEntry(Model):
             uid=None,
             username=None,
             password=None,
-            salt='',
+            salt=None,
             title=None,
             website=None,
             notes=None,
@@ -46,7 +44,7 @@ class VaultEntry(Model):
         self.folder = folder
 
     def __repr__(self) -> str:
-        return (f'VaultEntry(id={self.id}, '
+        return (f'{self.__class__.__name__}(id={self.id}, '
                 f'user_id={self.user_id}, '
                 f'username={self.username}, '
                 f'password={self.password}, '

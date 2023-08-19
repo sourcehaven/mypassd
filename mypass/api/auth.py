@@ -4,6 +4,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token, jwt_re
 from flask_sqlalchemy import SQLAlchemy
 from loguru import logger
 
+from mypass.db import utils as db_utils
 from mypass.models import User
 
 AuthApi = Blueprint('auth', __name__)
@@ -18,24 +19,24 @@ def registration():
     forename = req.get('forename')
     surename = req.get('surename')
     db: SQLAlchemy = flask.current_app.extensions['sqlalchemy']
-    user = User(username=username, password=password, forename=forename, surename=surename, email=email)
+    user = User.create(username=username, password=password, forename=forename, surename=surename, email=email)
     db.session.add(user)
     db.session.commit()
-    return flask.redirect(flask.url_for('auth.login', _method='POST', user_obj=user), 307)
+    return flask.redirect(flask.url_for('auth.login', _method='POST', token=user.token), 307)
 
 
 @AuthApi.route('/api/auth/login', methods=['POST'])
 def login():
-    request_obj = request.json
-    username = request_obj['username']
-    password = request_obj['password']
-    identity = {'username': username}
-    logger.debug(f'Logging in with identity:\n    {identity}')
-    if db_utils.get_user_login(user=username, pw=password) is not None:
-        access_token = create_access_token(identity=identity, fresh=True)
-        refresh_token = create_refresh_token(identity=identity)
-        return {'access_token': access_token, 'refresh_token': refresh_token}, 201
-    return {'msg': f'AUTHORIZATION FAILURE :: Could not log in user {username}.'}, 401
+    request_json = request.json
+    request_args = request.args
+    username = request_json['username']
+    password = request_json['password']
+    token = request_args.get('token', db_utils.get_user_login(username=username, password=password).unlock(password).token)
+    identity = {'username': username, 'password': password, 'token': token}
+    logger.debug(f'Logging in with identity:\n    {identity["username"]}')
+    access_token = create_access_token(identity=identity, fresh=True)
+    refresh_token = create_refresh_token(identity=identity)
+    return {'access_token': access_token, 'refresh_token': refresh_token}, 201
 
 
 @AuthApi.route('/api/auth/refresh', methods=['POST'])

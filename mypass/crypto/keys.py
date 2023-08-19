@@ -5,6 +5,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
+from ._com import ITERATIONS
+
 
 def gen_salt(nbytes: int = None):
     return secrets.token_urlsafe(nbytes=nbytes)
@@ -15,7 +17,7 @@ def derive_key_from_pw(
         *,
         algorithm: str | HashAlgorithm = 'SHA3_512',
         length: int = 32,
-        iterations: int = 160000,
+        iterations: int = ITERATIONS,
         salt: bytes = None,
         salt_nbytes: int = None
 ):

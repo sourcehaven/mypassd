@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 if __name__ == '__main__':
     from sqlalchemy import create_engine
     engine = create_engine(os.environ['MYPASS_DB_CONNECTION_URI'], echo=True)
-    user = User(username='skyzip', password='Sajtkukac2142')
+    user = User.create(username='skyzip', password='--**--||--**--')
     reminder_token = user.token_
     user.encrypt()
     vaultentry = VaultEntry(uid=2, username='mypass', password='PassWORD')
