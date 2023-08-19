@@ -31,7 +31,8 @@ def login():
     request_args = request.args
     username = request_json['username']
     password = request_json['password']
-    token = request_args.get('token', db_utils.get_user_login(username=username, password=password).unlock(password).token)
+    token = request_args.get(
+        'token', db_utils.get_user_login(username=username, password=password).unlock(password).token)
     identity = {'username': username, 'password': password, 'token': token}
     logger.debug(f'Logging in with identity:\n    {identity["username"]}')
     access_token = create_access_token(identity=identity, fresh=True)

@@ -97,7 +97,7 @@ class User(Model):
             pk=pk, username=username, password=hashed_pw, secretpw=password, token=secret_token, salt=salt,
             forename=forename, surename=surename, email=email, stfu=True)
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return (f'{self.__class__.__name__}(id={self.id}, '
                 f'username={self.username}, '
                 f'forename={self.forename}, '

@@ -16,6 +16,7 @@ postgres-#
 > **ALTER ROLE** mypass **SET** default_transaction_isolation **TO** 'read committed';\
 > **ALTER ROLE** mypass **SET** timezone **TO** 'UTC';\
 
+
 Next, execute the following db creation script:
 
 ```sql
@@ -32,6 +33,27 @@ CREATE DATABASE mypass
 GRANT ALL ON DATABASE mypass TO mypass;
 ```
 
+## MySQL and MariaDB initialization
+
+```sql
+-- Create a user with a password
+CREATE USER 'mypass'@'localhost' IDENTIFIED BY '${your password goes here}';
+
+-- Set user options
+SET GLOBAL character_set_client = 'utf8';
+SET GLOBAL transaction_isolation = 'READ-COMMITTED';
+SET GLOBAL time_zone = '+00:00';
+
+-- Create a database
+CREATE DATABASE mypass CHARACTER SET utf8 COLLATE utf8_general_ci;
+
+-- Grant privileges on the database to the user
+GRANT ALL PRIVILEGES ON mypass.* TO 'mypass'@'localhost';
+
+-- Flush privileges to apply changes
+FLUSH PRIVILEGES;
+```
+
 ### Migrations
 
 !!! TODO !!!
@@ -41,6 +63,12 @@ GRANT ALL ON DATABASE mypass TO mypass;
 Database connection string should be configured using the environment variable `MYPASS_DB_CONNECTION_URI`.
 Should be set to something like: `{protocol}://{dbuser}:{dbpass}@{host}:{port}/{dbname}`, eg.:
 `postgresql+psycopg2://mypass:MyPassWord@localhost:5432/mypass`
+
+### Setup in PostgreSQL
+`postgresql+psycopg2://mypass:MyPassWord@localhost:5432/mypass`
+
+### Setup in MySQL and MariaDB
+`mysql://mypass:MyPassWord@localhost:3306/mypass`
 
 ## Run tests:
 

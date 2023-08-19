@@ -7,8 +7,5 @@ pytest-dependency>=0.5.1
 assertpy>=1.1
 pytest-cov>=4.1.0
 
-# db migration tool (uses alembic)
-flask_migrate>=4.0.4
-
 # keeping project nice and clean (sometimes migrations fail due to leftover __pycache__
 pyclean>=2.7.4

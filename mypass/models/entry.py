@@ -43,7 +43,7 @@ class VaultEntry(Model):
         self.notes = notes
         self.folder = folder
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         return (f'{self.__class__.__name__}(id={self.id}, '
                 f'user_id={self.user_id}, '
                 f'username={self.username}, '

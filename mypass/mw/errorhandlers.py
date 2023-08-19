@@ -8,11 +8,13 @@ def base_error_handler(err: Exception):
 
 
 def auth_error_handler(err: AuthException):
-    return {'msg': f'AUTHORIZATION FAILURE'}, 401
+    return {'msg': f'AUTHORIZATION FAILURE :: {err}'}, 401
 
 
 def wrong_password_error_handler(err: WrongPasswordException):
-    return {'msg': f'AUTHORIZATION FAILURE :: Could not log in user -> cause: wrong username or password'}, 401
+    return {
+        'msg': f'AUTHORIZATION FAILURE :: Could not log in user -> cause: wrong username or password\n{err}'
+    }, 401
 
 
 def register_error_handlers(app: Flask):

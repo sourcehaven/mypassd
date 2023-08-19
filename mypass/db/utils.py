@@ -1,10 +1,9 @@
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
+from mypass.crypto import checkpw
 from mypass.exceptions import WrongPasswordException
 from mypass.models.user import User
-
 from .db import db
-from mypass.crypto import checkpw
 
 
 def get_user_login(username, password):
