@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 import sqlalchemy as sa
-from sqlalchemy import Table, Column, ForeignKey
+from sqlalchemy import Table, Column, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Model
@@ -71,12 +71,14 @@ class VaultEntry(Model):
 
 class Tag(Model):
     __tablename__ = 'tag'
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = (
+        UniqueConstraint('name', 'user_id'),
+        {'extend_existing': True})
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(sa.ForeignKey('user.id', ondelete='CASCADE'))
 
-    name: Mapped[int] = mapped_column(sa.String(255), unique=True)
+    name: Mapped[int] = mapped_column(sa.String(255))
     description: Mapped[Optional[str]] = mapped_column(sa.String(255))
     create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
 
