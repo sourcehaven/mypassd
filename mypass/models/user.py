@@ -1,13 +1,13 @@
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
 import sqlalchemy as sa
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 import sqlalchemy_utils as sau
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mypass import crypto
 from .base import Model
-from . import entry
+from .entry import VaultEntry, Tag
 
 
 class User(Model):
@@ -20,13 +20,13 @@ class User(Model):
     lastname: Mapped[Optional[str]] = mapped_column(sa.Unicode(255))
     email: Mapped[Optional[str]] = mapped_column(sau.EmailType(255))
     create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
+    salt: Mapped[str] = mapped_column(sa.String(255))
 
     _password: Mapped[str] = mapped_column(sa.String(255), name='password')
     _token: Mapped[str] = mapped_column(sa.String(255), name='token')
-    _salt: Mapped[str] = mapped_column(sa.String(255), name='salt')
 
-    vault_entries: Mapped[list[entry.VaultEntry]] = relationship(cascade='all, delete-orphan')
-    tags: Mapped[list[entry.Tag]] = relationship(cascade='all, delete-orphan')
+    vault_entries: Mapped[list[VaultEntry]] = relationship(cascade='all, delete-orphan')
+    tags: Mapped[list[Tag]] = relationship(cascade='all, delete-orphan')
 
     # noinspection PyShadowingBuiltins
     def __init__(
@@ -70,7 +70,7 @@ class User(Model):
         # noinspection PyTypeChecker
         self._token = token
         # noinspection PyTypeChecker
-        self._salt = salt
+        self.salt = salt
         # noinspection PyTypeChecker
         self.firstname = firstname
         # noinspection PyTypeChecker
@@ -125,24 +125,43 @@ class User(Model):
 
         return User(
             username=self.username, password=self._password, secretpw=pw, token=self._token,
-            salt=self._salt, firstname=self.firstname, lastname=self.lastname, email=self.email, stfu=True)
+            salt=self.salt, firstname=self.firstname, lastname=self.lastname, email=self.email, stfu=True)
 
     @property
     def token(self):
-        if not hasattr(self, '_secretpw'):
+        if not hasattr(self, '_secretpw') or self._secretpw is None:
             raise RuntimeError(f'{self.__class__.__name__} object at {id(self)} is not unlocked.')
-        return crypto.decryptsecret(self._token, pw=self._secretpw, salt=self._salt)
+        return crypto.decryptsecret(self._token, pw=self._secretpw, salt=self.salt)
+
+    @token.setter
+    def token(self, __value):
+        """
+        Parameters:
+            __value (str): the value that will be salted and encrypted to create the secret token
+        """
+
+        if not hasattr(self, '_secretpw') or self._secretpw is None:
+            raise RuntimeError(
+                f'{self.__class__.__name__} object at {id(self)} does not have an encryption key.\n'
+                f'Set the object\'s password attribute')
+        self._token: str = crypto.encryptsecret(__value, pw=self._secretpw, salt=self.salt)
 
     @property
     def password(self):
-        if not hasattr(self, '_secretpw'):
+        if not hasattr(self, '_secretpw') or self._secretpw is None:
             raise RuntimeError(f'{self.__class__.__name__} object at {id(self)} is not unlocked.')
         return self._secretpw
+
+    @password.setter
+    def password(self, __value):
+        """
+        Parameters:
+            __value (str): the value that will be salted and hashed to create a password
+        """
+
+        self._secretpw = __value
+        self._password: str = crypto.hashpw(__value, self.salt)
 
     @property
     def hashedpassword(self):
         return self._password
-
-    @property
-    def salt(self):
-        return self._salt
