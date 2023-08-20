@@ -4,6 +4,7 @@ from mypass.crypto import checkpw
 from mypass.exceptions import WrongPasswordException
 from mypass.models.user import User
 from .db import db
+from ..models.blacklist import TokenBlacklist
 
 
 def get_user_login(username, password):
@@ -29,3 +30,7 @@ def get_user_login(username, password):
     except (NoResultFound, MultipleResultsFound):
         pass
     raise WrongPasswordException('Could not found user with matching password.')
+
+
+def is_blacklisted_token(token):
+    return db.session.query(TokenBlacklist.token).filter_by(token=token).first() is not None

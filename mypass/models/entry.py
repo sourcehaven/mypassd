@@ -31,6 +31,8 @@ class VaultEntry(Model):
     folder: Mapped[Optional[str]] = mapped_column(sa.String(255))
     create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
     is_active: Mapped[bool] = mapped_column(sa.Boolean, default=True)
+
+    _parent_id: Mapped[Optional[int]] = mapped_column(sa.Integer, unique=True)
     _password: Mapped[str] = mapped_column(sa.String(255), name='password')
 
     tags: Mapped[list['Tag']] = relationship(

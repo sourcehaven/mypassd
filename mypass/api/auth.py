@@ -4,8 +4,8 @@ from flask_jwt_extended import create_access_token, create_refresh_token, jwt_re
 from flask_sqlalchemy import SQLAlchemy
 from loguru import logger
 
-from mypass.db import utils as db_utils
-from mypass.models import User
+from mypass.db import utils as db_utils, db
+from mypass.models import TokenBlacklist, User
 
 AuthApi = Blueprint('auth', __name__)
 
@@ -16,10 +16,10 @@ def registration():
     username = req['username']
     password = req['password']
     email = req.get('email')
-    forename = req.get('forename')
-    surename = req.get('surename')
+    firstname = req.get('firstname')
+    lastname = req.get('lastname')
     db: SQLAlchemy = flask.current_app.extensions['sqlalchemy']
-    user = User.create(username=username, password=password, forename=forename, surename=surename, email=email)
+    user = User.create(username=username, password=password, firstname=firstname, lastname=lastname, email=email)
     db.session.add(user)
     db.session.commit()
     return flask.redirect(flask.url_for('auth.login', _method='POST', token=user.token), 307)
@@ -56,8 +56,12 @@ def logout():
     logger.debug('Logging out user.')
     try:
         jti = get_jwt()['jti']
-        logger.debug(f'Blacklisting token: {jti}.')
-        # blacklisting token ... --> blacklist.add(jti)
+
+        tbl = TokenBlacklist(token=jti)
+        db.session.add(tbl)
+        db.session.commit()
+        logger.debug(f'Token: {jti} has been successfully blacklisted.')
+
         return '', 204
     except KeyError:
         return '', 409
