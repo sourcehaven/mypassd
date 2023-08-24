@@ -2,9 +2,8 @@ from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 from mypass.crypto import checkpw
 from mypass.exceptions import WrongPasswordException
-from mypass.models.user import User
+from mypass.models import User, VaultEntry, TokenBlacklist
 from .db import db
-from ..models.blacklist import TokenBlacklist
 
 
 def get_user_login(username, password):
@@ -34,3 +33,47 @@ def get_user_login(username, password):
 
 def is_blacklisted_token(token):
     return db.session.query(TokenBlacklist.token).filter_by(token=token).first() is not None
+
+
+def insert_blacklist_token(jti: str):
+    tbl = TokenBlacklist(token=jti)
+    db.session.add(tbl)
+    db.session.commit()
+    return tbl
+
+
+def insert_user(username: str, password: str, firstname: str = None, lastname: str = None, email: str = None):
+    user = User.create(username=username, password=password, firstname=firstname, lastname=lastname, email=email)
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+def insert_vault_entry(
+        username: str = None,
+        password: str = None,
+        title: str = None,
+        website: str = None,
+        notes: str = None,
+        folder: str = None
+):
+    entry = VaultEntry.create(
+        username=username, password=password, title=title, website=website, notes=notes, folder=folder)
+    db.session.add(entry)
+    db.session.commit()
+    return entry
+
+
+def select_vault_entry():
+    # TODO: implement select methods
+    return db.session.query(VaultEntry).all()
+
+
+def update_vault_entry():
+    # TODO: implement update methods
+    raise NotImplementedError()
+
+
+def delete_vault_entry():
+    # TODO: implement delete methods
+    raise NotImplementedError()

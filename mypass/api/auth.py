@@ -1,11 +1,10 @@
 import flask
 from flask import Blueprint, request
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
-from flask_sqlalchemy import SQLAlchemy
 from loguru import logger
 
-from mypass.db import utils as db_utils, db
-from mypass.models import TokenBlacklist, User
+from mypass.db import utils as db_utils
+from .com import IDENTITY_UID, IDENTITY_USER, IDENTITY_PW, IDENTITY_TOK
 
 AuthApi = Blueprint('auth', __name__)
 
@@ -18,11 +17,10 @@ def registration():
     email = req.get('email')
     firstname = req.get('firstname')
     lastname = req.get('lastname')
-    db: SQLAlchemy = flask.current_app.extensions['sqlalchemy']
-    user = User.create(username=username, password=password, firstname=firstname, lastname=lastname, email=email)
-    db.session.add(user)
-    db.session.commit()
-    return flask.redirect(flask.url_for('auth.login', _method='POST', token=user.token), 307)
+    user = db_utils.insert_user(
+        username=username, password=password, firstname=firstname, lastname=lastname, email=email)
+    return flask.redirect(flask.url_for(
+        'auth.login', _method='POST', uid=user.id, token=user.token), 307)
 
 
 @AuthApi.route('/api/auth/login', methods=['POST'])
@@ -31,9 +29,12 @@ def login():
     request_args = request.args
     username = request_json['username']
     password = request_json['password']
+    user = db_utils.get_user_login(username=username, password=password)
     token = request_args.get(
-        'token', db_utils.get_user_login(username=username, password=password).unlock(password).token)
-    identity = {'username': username, 'password': password, 'token': token}
+        'token', user.unlock(password).token)
+    uid = request_args.get(
+        'uid', user.id)
+    identity = {IDENTITY_UID: uid, IDENTITY_USER: username, IDENTITY_PW: password, IDENTITY_TOK: token}
     logger.debug(f'Logging in with identity:\n    {identity["username"]}')
     access_token = create_access_token(identity=identity, fresh=True)
     refresh_token = create_refresh_token(identity=identity)
@@ -56,12 +57,8 @@ def logout():
     logger.debug('Logging out user.')
     try:
         jti = get_jwt()['jti']
-
-        tbl = TokenBlacklist(token=jti)
-        db.session.add(tbl)
-        db.session.commit()
+        db_utils.insert_blacklist_token(jti)
         logger.debug(f'Token: {jti} has been successfully blacklisted.')
-
         return '', 204
     except KeyError:
         return '', 409

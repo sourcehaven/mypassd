@@ -1,10 +1,14 @@
 import os
 
+from flask_jwt_extended import get_jwt_identity
+
 from mypass.models import User, VaultEntry
 from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
 
 if __name__ == '__main__':
-    from sqlalchemy import create_engine
+    identity = get_jwt_identity()
+
     engine = create_engine(os.environ['MYPASS_DB_CONNECTION_URI'], echo=True)
     user = User.create(username='whodahell', password='--**--||--**--')
     vaultentry = VaultEntry(uid=2, username='mypass', password='PassWORD')

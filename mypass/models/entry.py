@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from mypass import crypto
 from mypass.db import db
 from .base import Model
+from .seri import JSONSerializable
 
 VaultTag = Table(
     'vault_tag',
@@ -17,7 +18,7 @@ VaultTag = Table(
 )
 
 
-class VaultEntry(Model):
+class VaultEntry(Model, JSONSerializable):
     __tablename__ = 'vault'
     __table_args__ = {'extend_existing': True}
 
@@ -127,6 +128,21 @@ class VaultEntry(Model):
             encryptionkey (str):
         """
 
+        if user_id is None or encryptionkey is None:
+            from flask_jwt_extended import get_jwt_identity
+            from mypass.api.com import IDENTITY_UID, IDENTITY_TOK
+            identity = get_jwt_identity()
+            if user_id is None:
+                try:
+                    user_id = identity[IDENTITY_UID]
+                except RuntimeError:
+                    pass
+            if encryptionkey is None:
+                try:
+                    encryptionkey = identity[IDENTITY_TOK]
+                except RuntimeError:
+                    pass
+
         obj = cls(
             id=id, user_id=user_id, username=username, password=None, salt=None, title=title, website=website,
             notes=notes, folder=folder, _encryptionkey=encryptionkey, stfu=True)
@@ -178,6 +194,10 @@ class VaultEntry(Model):
         """
 
         self._encryptionkey = __value
+
+    def tojson(self) -> dict:
+        # TODO: implement method
+        raise NotImplementedError()
 
 
 class Tag(Model):
