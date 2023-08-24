@@ -33,4 +33,4 @@ class ModelPlusJSONEncoder(JSONEncoder):
                 'firstname': o.firstname,
                 'lastname': o.lastname
             }
-        return json.dumps(o)
+        return super().default(o)
