@@ -23,7 +23,7 @@ def get_user_login(username, password):
     """
 
     try:
-        user = db.session.query(User.create(username=username)).one()
+        user = db.session.query(User).filter_by(username=username).one()
         if checkpw(pw=password, salt=user.salt, hashedpw=user.hashedpassword):
             return user
     except (NoResultFound, MultipleResultsFound):
@@ -64,9 +64,8 @@ def insert_vault_entry(
     return entry
 
 
-def select_vault_entry():
-    # TODO: implement select methods
-    return db.session.query(VaultEntry).all()
+def select_vault_entry(user_id: int = None):
+    return db.session.query(VaultEntry).filter_by(user_id=user_id).all()
 
 
 def update_vault_entry():

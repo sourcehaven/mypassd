@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 
 from mypass.db import utils as db_utils
 
-VaultApi = Blueprint('auth', __name__)
+VaultApi = Blueprint('vault', __name__)
 
 
 @VaultApi.route('/api/vault/add', methods=['POST'])
@@ -22,7 +22,7 @@ def vault_add():
 
 
 @VaultApi.route('/api/vault/select', methods=['POST'])
-@jwt_required()
+@jwt_required(optional=True)
 def vault_select():
     req = request.json
     username = req.get('username')

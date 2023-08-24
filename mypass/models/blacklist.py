@@ -15,6 +15,9 @@ class TokenBlacklist(Model):
     create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
 
     def __repr__(self):
+        return str(self)
+
+    def __str__(self):
         return (f'{self.__class__.__name__}('
                 f'id={self.id}, '
                 f'token={self.token}, '

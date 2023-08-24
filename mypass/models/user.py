@@ -105,12 +105,14 @@ class User(Model):
             firstname=firstname, lastname=lastname, email=email, stfu=True)
 
     def __repr__(self):
+        return str(self)
+
+    def __str__(self):
         return (f'{self.__class__.__name__}(id={self.id}, '
                 f'username={self.username}, '
                 f'firstname={self.firstname}, '
                 f'lastname={self.lastname}, '
-                f'email={self.email}, '
-                f'password={self.password})')
+                f'email={self.email}')
 
     def unlock(self, pw):
         """

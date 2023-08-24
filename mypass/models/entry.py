@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from mypass import crypto
 from mypass.db import db
 from .base import Model
-from .seri import JSONSerializable
 
 VaultTag = Table(
     'vault_tag',
@@ -18,7 +17,7 @@ VaultTag = Table(
 )
 
 
-class VaultEntry(Model, JSONSerializable):
+class VaultEntry(Model):
     __tablename__ = 'vault'
     __table_args__ = {'extend_existing': True}
 
@@ -151,6 +150,9 @@ class VaultEntry(Model, JSONSerializable):
         return obj
 
     def __repr__(self):
+        return str(self)
+
+    def __str__(self):
         return (f'{self.__class__.__name__}(id={self.id}, '
                 f'user_id={self.user_id}, '
                 f'username={self.username}, '
@@ -183,7 +185,9 @@ class VaultEntry(Model, JSONSerializable):
 
     @property
     def encryptionkey(self):
-        return self._encryptionkey
+        if hasattr(self, '_encryptionkey'):
+            return self._encryptionkey
+        return None
 
     @encryptionkey.setter
     def encryptionkey(self, __value):
@@ -195,9 +199,9 @@ class VaultEntry(Model, JSONSerializable):
 
         self._encryptionkey = __value
 
-    def tojson(self) -> dict:
-        # TODO: implement method
-        raise NotImplementedError()
+    @property
+    def parent_id(self):
+        return self._parent_id
 
 
 class Tag(Model):

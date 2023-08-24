@@ -17,23 +17,21 @@ def registration():
     email = req.get('email')
     firstname = req.get('firstname')
     lastname = req.get('lastname')
-    user = db_utils.insert_user(
+    db_utils.insert_user(
         username=username, password=password, firstname=firstname, lastname=lastname, email=email)
     return flask.redirect(flask.url_for(
-        'auth.login', _method='POST', uid=user.id, token=user.token), 307)
+        'auth.login', _method='POST'), 307)
 
 
 @AuthApi.route('/api/auth/login', methods=['POST'])
+@jwt_required(optional=True)
 def login():
     request_json = request.json
-    request_args = request.args
     username = request_json['username']
     password = request_json['password']
     user = db_utils.get_user_login(username=username, password=password)
-    token = request_args.get(
-        'token', user.unlock(password).token)
-    uid = request_args.get(
-        'uid', user.id)
+    token = user.unlock(password).token
+    uid = user.id
     identity = {IDENTITY_UID: uid, IDENTITY_USER: username, IDENTITY_PW: password, IDENTITY_TOK: token}
     logger.debug(f'Logging in with identity:\n    {identity["username"]}')
     access_token = create_access_token(identity=identity, fresh=True)
