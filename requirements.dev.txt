@@ -12,3 +12,5 @@ pyclean>=2.7.4
 
 # api development with more interaction
 jupyterlab>=4.0.5
+jupyterlab-lsp>=4.2.0
+jedi-language-server>=0.41.0
