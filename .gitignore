@@ -1,9 +1,9 @@
-.idea
-venv
-**/__pycache__/*
-**/.ipynb_checkpoints
+.idea/
+venv/
+**/__pycache__/
+**/.ipynb_checkpoints/
 build/
 dist/
-*.egg-info
-.cache
-instance
+*.egg-info/
+.cache/
+instance/
