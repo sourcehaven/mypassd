@@ -65,7 +65,19 @@ def insert_vault_entry(
 
 
 def select_vault_entry(user_id: int = None):
-    return db.session.query(VaultEntry).filter_by(user_id=user_id).all()
+    q = {}
+    if user_id is not None:
+        q['user_id'] = user_id
+    return db.session.query(VaultEntry).filter_by(**q).all()
+
+
+def unlock_vault_entry(entry: VaultEntry | list[VaultEntry], enckey: str):
+    try:
+        for e in entry:
+            e.encryptionkey = enckey
+    except TypeError:
+        entry.encryptionkey = enckey
+    return entry
 
 
 def update_vault_entry():

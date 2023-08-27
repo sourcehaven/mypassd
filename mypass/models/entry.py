@@ -2,18 +2,17 @@ from datetime import datetime
 from typing import Optional
 
 import sqlalchemy as sa
-from sqlalchemy import Table, Column, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from mypass import crypto
 from mypass.db import db
+from mypass import crypto
 from .base import Model
 
-VaultTag = Table(
+
+VaultTag = db.Table(
     'vault_tag',
-    db.metadata,
-    Column('vault_id', ForeignKey('vault.id', ondelete='CASCADE'), primary_key=True),
-    Column('tag_id', ForeignKey('tag.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('vault_id', db.ForeignKey('vault.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+    db.Column('tag_id', db.ForeignKey('tag.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
 )
 
 
@@ -36,7 +35,7 @@ class VaultEntry(Model):
     _password: Mapped[str] = mapped_column(sa.String(255), name='password')
 
     tags: Mapped[list['Tag']] = relationship(
-        secondary=VaultTag, back_populates='vault_entries', lazy='joined', innerjoin=True)
+        secondary='vault_tag', back_populates='entries')
 
     # noinspection PyShadowingBuiltins
     def __init__(
@@ -51,6 +50,8 @@ class VaultEntry(Model):
             website=None,
             notes=None,
             folder=None,
+            is_active=None,
+            create_time=None,
             stfu=False,
             _encryptionkey=None,
     ):
@@ -67,6 +68,8 @@ class VaultEntry(Model):
             website (str | None):
             notes (str | None):
             folder (str | None):
+            is_active (bool | None):
+            create_time (datetime | None):
             stfu (bool):
             _encryptionkey (str | None):
 
@@ -76,6 +79,11 @@ class VaultEntry(Model):
 
         if not stfu:
             raise TypeError('You dont know what you are doing! Use create classmethod instead.')
+
+        if is_active is None:
+            is_active = True
+        if create_time is None:
+            create_time = datetime.utcnow()
 
         # noinspection PyTypeChecker
         self.id = id
@@ -95,6 +103,10 @@ class VaultEntry(Model):
         self.notes = notes
         # noinspection PyTypeChecker
         self.folder = folder
+        # noinspection PyTypeChecker
+        self.is_active = is_active
+        # noinspection PyTypeChecker
+        self.create_time = create_time
         self._encryptionkey = _encryptionkey
 
     # noinspection PyShadowingBuiltins
@@ -156,9 +168,10 @@ class VaultEntry(Model):
         return (f'{self.__class__.__name__}(id={self.id}, '
                 f'user_id={self.user_id}, '
                 f'username={self.username}, '
-                f'password={self.password}, '
                 f'title={self.title}, '
-                f'website={self.website})')
+                f'website={self.website}), '
+                f'folder={self.folder}, '
+                f'is_active={self.is_active}')
 
     @property
     def password(self):
@@ -206,9 +219,7 @@ class VaultEntry(Model):
 
 class Tag(Model):
     __tablename__ = 'tag'
-    __table_args__ = (
-        UniqueConstraint('name', 'user_id'),
-        {'extend_existing': True})
+    __table_args__ = sa.UniqueConstraint('name', 'user_id'), {'extend_existing': True}
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(sa.ForeignKey('user.id', ondelete='CASCADE'))
@@ -217,8 +228,8 @@ class Tag(Model):
     description: Mapped[Optional[str]] = mapped_column(sa.String(255))
     create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
 
-    vault_entries: Mapped[list['VaultEntry']] = relationship(
-        secondary=VaultTag, back_populates='tags', lazy='joined', innerjoin=True)
+    entries: Mapped[Optional[list['VaultEntry']]] = relationship(
+        secondary='vault_tag', back_populates='tags', lazy='joined', innerjoin=True)
 
     def __repr__(self):
         return (f'{self.__class__.__name__}(id={self.id}, '

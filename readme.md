@@ -70,6 +70,12 @@ Should be set to something like: `{protocol}://{dbuser}:{dbpass}@{host}:{port}/{
 ### Setup in MySQL and MariaDB
 `mysql://mypass:MyPassWord@localhost:3306/mypass`
 
+### Setup in SQLite
+
+`sqlite:///:memory:`
+`sqlite:///path/db/data.db`
+`sqlite+pysqlite:///:memory:`
+
 ## Run tests:
 
 > pytest tests

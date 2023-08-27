@@ -9,3 +9,6 @@ pytest-cov>=4.1.0
 
 # keeping project nice and clean (sometimes migrations fail due to leftover __pycache__
 pyclean>=2.7.4
+
+# api development with more interaction
+jupyterlab>=4.0.5

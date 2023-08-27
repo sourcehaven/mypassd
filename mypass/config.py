@@ -5,7 +5,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 secret_key = 'sourcehaven'
 expires_delta = datetime.timedelta(minutes=10)
-host = 'localhost'
+host = '0.0.0.0'
 port = 5757
 
 
@@ -20,7 +20,7 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = expires_delta
     JWT_BLACKLIST_ENABLED = True
     JWT_BLACKLIST_TOKEN_CHECKS = ['access', 'refresh']
-    SQLALCHEMY_DATABASE_URI = os.environ['MYPASS_DB_CONNECTION_URI']
+    SQLALCHEMY_DATABASE_URI = os.environ.get('MYPASS_DB_CONNECTION_URI')
 
 
 class ProductionConfig(Config):
