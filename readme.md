@@ -76,11 +76,17 @@ Should be set to something like: `{protocol}://{dbuser}:{dbpass}@{host}:{port}/{
 `sqlite:///path/db/data.db`
 `sqlite+pysqlite:///:memory:`
 
-## Run tests:
+## Development
+
+### Run pylab notebook
+
+> jupyter lab
+
+### Run tests:
 
 > pytest tests
 
-## Run coverage:
+### Run coverage:
 
 > pytest --cov-report html --cov=mypass tests
 
@@ -98,7 +104,7 @@ Run code style guide:
 
 > flake8 mypass
 
-## Cleanup
+### Cleanup
 
 To clean local binaries, run:
 

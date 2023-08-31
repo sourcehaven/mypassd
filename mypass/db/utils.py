@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Mapping
+
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 from mypass.crypto import checkpw
@@ -64,11 +67,21 @@ def insert_vault_entry(
     return entry
 
 
-def select_vault_entry(user_id: int = None):
-    q = {}
-    if user_id is not None:
-        q['user_id'] = user_id
-    return db.session.query(VaultEntry).filter_by(**q).all()
+def select_vault_entry(
+        id: int = ...,
+        user_id: int = ...,
+        username: str = ...,
+        title: str = ...,
+        website: str = ...,
+        notes: str = ...,
+        folder: str = ...,
+        create_time: datetime | str = ...,
+        is_active: bool = ...
+):
+    crit = VaultEntry.map_criterion({
+        'id': id, 'user_id': user_id, 'username': username, 'title': title, 'website': website,
+        'notes': notes, 'folder': folder, 'create_time': create_time, 'is_active': is_active})
+    return db.session.query(VaultEntry).filter_by(**crit).all()
 
 
 def unlock_vault_entry(entry: VaultEntry | list[VaultEntry], enckey: str):
@@ -80,11 +93,49 @@ def unlock_vault_entry(entry: VaultEntry | list[VaultEntry], enckey: str):
     return entry
 
 
-def update_vault_entry():
-    # TODO: implement update methods
-    raise NotImplementedError()
+def update_vault_entry(
+        user_id: int = ...,
+        username: str = ...,
+        title: str = ...,
+        website: str = ...,
+        notes: str = ...,
+        folder: str = ...,
+        create_time: datetime | str = ...,
+        new_username: str = ...,
+        new_title: str = ...,
+        new_website: str = ...,
+        new_notes: str = ...,
+        new_folder: str = ...,
+):
+    if isinstance(create_time, str):
+        create_time = datetime.fromisoformat(create_time)
+    crit = VaultEntry.map_criterion({
+        'user_id': user_id, 'username': username, 'title': title, 'website': website,
+        'notes': notes, 'folder': folder, 'create_time': create_time})
+    fields = VaultEntry.map_update({
+        'username': new_username, 'title': new_title, 'website': new_website,
+        'notes': new_notes, 'folder': new_folder})
+
+    if len(fields) == 0:
+        return 0
+
+    entries = db.session.query(VaultEntry).filter_by(**crit).all()
+    new_entries = [VaultEntry.copy(entry) for entry in entries]
+    db.session.add_all(new_entries)
+    # we need to get the ids of newly added items
+    db.session.flush()
+    affected_rows = 0
+    for entry, new_entry in zip(entries, new_entries):
+        affected_rows += db.session.query(VaultEntry).filter_by(id=entry.id).update(
+            values={'is_active': False})
+        affected_rows += db.session.query(VaultEntry).filter_by(id=new_entry.id).update(
+            values={'parent_id': entry.id, **fields})
+
+    db.session.commit()
+    return affected_rows
 
 
-def delete_vault_entry():
-    # TODO: implement delete methods
-    raise NotImplementedError()
+def delete_vault_entry(crit: Mapping):
+    if len(crit) > 0:
+        db.session.query(VaultEntry).filter_by(**crit).delete()
+        db.session.commit()

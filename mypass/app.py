@@ -25,4 +25,10 @@ def create_app():
 
     jwt = JWTManager(app)
     jwt.token_in_blocklist_loader(check_if_token_in_blacklist)
+
+    if os.getenv('MYPASS_TESTENV', False):
+        from ._dummy import init_db
+        with app.app_context():
+            init_db(db)
+
     return app

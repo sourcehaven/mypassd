@@ -41,6 +41,7 @@ class User(Model):
             firstname=None,
             lastname=None,
             email=None,
+            create_time=None,
             stfu=False
     ):
         """
@@ -55,6 +56,7 @@ class User(Model):
             firstname (str | None): forename
             lastname (str | None): family name
             email (str | None): email address of the user
+            create_time (datetime | None): registration time
             stfu (bool): silence error messages explicitly
         """
 
@@ -77,6 +79,8 @@ class User(Model):
         self.lastname = lastname
         # noinspection PyTypeChecker
         self.email = email
+        # noinspection PyTypeChecker
+        self.create_time = create_time
         self._secretpw = secretpw
 
     @classmethod
@@ -96,7 +100,7 @@ class User(Model):
         secret_token = None
         hashed_pw = None
         if password is not None:
-            salt = crypto.gen_salt()
+            salt = crypto.gensalt()
             token = crypto.initpw(64)
             secret_token = crypto.encryptsecret(token, pw=password, salt=salt)
             hashed_pw = crypto.hashpw(password, salt)
@@ -126,8 +130,9 @@ class User(Model):
         """
 
         return User(
-            username=self.username, password=self._password, secretpw=pw, token=self._token,
-            salt=self.salt, firstname=self.firstname, lastname=self.lastname, email=self.email, stfu=True)
+            id=self.id, username=self.username, password=self._password, secretpw=pw, token=self._token,
+            salt=self.salt, firstname=self.firstname, lastname=self.lastname, email=self.email,
+            create_time=self.create_time, stfu=True)
 
     @property
     def token(self):

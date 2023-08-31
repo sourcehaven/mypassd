@@ -1,13 +1,13 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Mapping
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from mypass.db import db
 from mypass import crypto
+from mypass.db import db
+from mypass.functional import querymap
 from .base import Model
-
 
 VaultTag = db.Table(
     'vault_tag',
@@ -22,8 +22,9 @@ class VaultEntry(Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(sa.ForeignKey('user.id', ondelete='CASCADE'))
+    parent_id: Mapped[Optional[int]] = mapped_column(sa.ForeignKey('vault.id', ondelete='CASCADE'))
     username: Mapped[str] = mapped_column(sa.String(255))
-    salt: Mapped[str] = mapped_column(sa.String(255), name='salt')
+    salt: Mapped[str] = mapped_column(sa.String(255))
     title: Mapped[Optional[str]] = mapped_column(sa.String(255))
     website: Mapped[Optional[str]] = mapped_column(sa.String(255))
     notes: Mapped[Optional[str]] = mapped_column(sa.String(2048))
@@ -31,11 +32,12 @@ class VaultEntry(Model):
     create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
     is_active: Mapped[bool] = mapped_column(sa.Boolean, default=True)
 
-    _parent_id: Mapped[Optional[int]] = mapped_column(sa.Integer, unique=True)
     _password: Mapped[str] = mapped_column(sa.String(255), name='password')
 
-    tags: Mapped[list['Tag']] = relationship(
-        secondary='vault_tag', back_populates='entries')
+    parent: Mapped[Optional['VaultEntry']] = relationship(
+        remote_side='VaultEntry.id', lazy='joined', innerjoin=True, single_parent=True,
+        cascade='all, delete-orphan')
+    tags: Mapped[list['Tag']] = relationship(secondary='vault_tag', back_populates='entries')
 
     # noinspection PyShadowingBuiltins
     def __init__(
@@ -82,8 +84,6 @@ class VaultEntry(Model):
 
         if is_active is None:
             is_active = True
-        if create_time is None:
-            create_time = datetime.utcnow()
 
         # noinspection PyTypeChecker
         self.id = id
@@ -109,7 +109,6 @@ class VaultEntry(Model):
         self.create_time = create_time
         self._encryptionkey = _encryptionkey
 
-    # noinspection PyShadowingBuiltins
     @classmethod
     def create(
             cls,
@@ -157,9 +156,34 @@ class VaultEntry(Model):
         obj = cls(
             id=id, user_id=user_id, username=username, password=None, salt=None, title=title, website=website,
             notes=notes, folder=folder, _encryptionkey=encryptionkey, stfu=True)
-        obj.salt = crypto.gen_salt()
+        obj.salt = crypto.gensalt()
         obj.password = password
         return obj
+
+    @classmethod
+    def copy(cls, obj):
+        """
+        Copies a vault entry without id.
+
+        Parameters:
+            obj (VaultEntry):
+        """
+        kwargs = {
+            'user_id': obj.user_id,
+            'username': obj.username,
+            'password': obj._password,
+            'salt': obj.salt,
+            'title': obj.title,
+            'website': obj.website,
+            'notes': obj.notes,
+            'folder': obj.folder,
+            'is_active': obj.is_active,
+            'stfu': True,
+        }
+        if hasattr(obj, '_encryptionkey'):
+            kwargs['_encryptionkey'] = obj._encryptionkey
+
+        return VaultEntry(**kwargs)
 
     def __repr__(self):
         return str(self)
@@ -212,9 +236,23 @@ class VaultEntry(Model):
 
         self._encryptionkey = __value
 
-    @property
-    def parent_id(self):
-        return self._parent_id
+    _crit_whitelist = {
+        'id', 'user_id', 'username', 'title', 'website', 'notes', 'folder', 'create_time', 'is_active'}
+
+    _update_whitelist = {
+        'username', 'password', 'title', 'website', 'notes', 'folder'}
+
+    @staticmethod
+    def map_criterion(crit: Mapping):
+        q = querymap(crit)
+        q = {key: q[key] for key in q if key in VaultEntry._crit_whitelist}
+        return q
+
+    @staticmethod
+    def map_update(crit: Mapping):
+        q = querymap(crit)
+        q = {key: q[key] for key in q if key in VaultEntry._update_whitelist}
+        return q
 
 
 class Tag(Model):
