@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Mapping
 
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
@@ -76,11 +75,12 @@ def select_vault_entry(
         notes: str = ...,
         folder: str = ...,
         create_time: datetime | str = ...,
-        is_active: bool = ...
+        active: bool = ...,
+        deleted: bool = ...
 ):
     crit = VaultEntry.map_criterion({
         'id': id, 'user_id': user_id, 'username': username, 'title': title, 'website': website,
-        'notes': notes, 'folder': folder, 'create_time': create_time, 'is_active': is_active})
+        'notes': notes, 'folder': folder, 'create_time': create_time, 'active': active, 'deleted': deleted})
     return db.session.query(VaultEntry).filter_by(**crit).all()
 
 
@@ -100,6 +100,8 @@ def update_vault_entry(
         website: str = ...,
         notes: str = ...,
         folder: str = ...,
+        active: bool = ...,
+        deleted: bool = ...,
         create_time: datetime | str = ...,
         new_username: str = ...,
         new_title: str = ...,
@@ -111,7 +113,7 @@ def update_vault_entry(
         create_time = datetime.fromisoformat(create_time)
     crit = VaultEntry.map_criterion({
         'user_id': user_id, 'username': username, 'title': title, 'website': website,
-        'notes': notes, 'folder': folder, 'create_time': create_time})
+        'notes': notes, 'folder': folder, 'create_time': create_time, 'active': active, 'deleted': deleted})
     fields = VaultEntry.map_update({
         'username': new_username, 'title': new_title, 'website': new_website,
         'notes': new_notes, 'folder': new_folder})
@@ -127,7 +129,7 @@ def update_vault_entry(
     affected_rows = 0
     for entry, new_entry in zip(entries, new_entries):
         affected_rows += db.session.query(VaultEntry).filter_by(id=entry.id).update(
-            values={'is_active': False})
+            values={'active': False})
         affected_rows += db.session.query(VaultEntry).filter_by(id=new_entry.id).update(
             values={'parent_id': entry.id, **fields})
 
@@ -135,7 +137,22 @@ def update_vault_entry(
     return affected_rows
 
 
-def delete_vault_entry(crit: Mapping):
-    if len(crit) > 0:
-        db.session.query(VaultEntry).filter_by(**crit).delete()
-        db.session.commit()
+def delete_vault_entry(
+        user_id: int = ...,
+        username: str = ...,
+        title: str = ...,
+        website: str = ...,
+        notes: str = ...,
+        folder: str = ...,
+        create_time: datetime | str = ...,
+        active: bool = ...,
+        deleted: bool = ...
+):
+    if isinstance(create_time, str):
+        create_time = datetime.fromisoformat(create_time)
+    crit = VaultEntry.map_criterion({
+        'user_id': user_id, 'username': username, 'title': title, 'website': website,
+        'notes': notes, 'folder': folder, 'create_time': create_time, 'active': active, 'deleted': deleted})
+    affected_rows = db.session.query(VaultEntry).filter_by(**crit).update(values={'deleted': True, 'active': False})
+    db.session.commit()
+    return affected_rows

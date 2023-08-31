@@ -24,6 +24,8 @@ def vault_select():
     crit = req.get('crit', {})
     identity = get_jwt_identity()
     crit['user_id'] = identity[IDENTITY_UID]
+    crit['active'] = True
+    crit['deleted'] = False
     entries = db_utils.select_vault_entry(**crit)
     entries = db_utils.unlock_vault_entry(entries, enckey=identity[IDENTITY_TOK])
     return entries, 200
@@ -38,6 +40,8 @@ def vault_update():
     fields = {f'new_{k}': fields[k] for k in fields}
     identity = get_jwt_identity()
     crit['user_id'] = identity[IDENTITY_UID]
+    crit['active'] = True
+    crit['deleted'] = False
     updates = db_utils.update_vault_entry(**crit, **fields)
     return {'affected_rows': updates}, 200
 
@@ -50,5 +54,7 @@ def vault_delete():
     identity = get_jwt_identity()
     crit = VaultEntry.map_criterion(crit=req_crit)
     crit['user_id'] = identity[IDENTITY_UID]
-    deletes = db_utils.delete_vault_entry(crit=crit)
-    return deletes, 200
+    crit['active'] = True
+    crit['deleted'] = False
+    deletes = db_utils.delete_vault_entry(**crit)
+    return {'affected_rows': deletes}, 200

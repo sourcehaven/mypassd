@@ -19,19 +19,22 @@ class ModelPlusJSONEncoder(JSONEncoder):
                 'folder': o.folder,
                 'notes': o.notes,
                 'tags': o.tags,
-                'parentid': o.parent_id
+                'parent_id': o.parent_id,
+                'active': o.active,
+                'deleted': o.deleted,
+                'create_time': o.create_time.isoformat()
             }
         if isinstance(o, Tag):
             return {
                 'id': o.id,
                 'name': o.name,
-                'createtime': o.create_time
+                'create_time': o.create_time.isoformat()
             }
         if isinstance(o, User):
             return {
                 'id': o.id,
                 'username': o.username,
-                'createtime': o.create_time,
+                'create_time': o.create_time.isoformat(),
                 'email': o.email,
                 'firstname': o.firstname,
                 'lastname': o.lastname

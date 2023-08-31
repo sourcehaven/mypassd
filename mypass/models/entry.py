@@ -30,13 +30,13 @@ class VaultEntry(Model):
     notes: Mapped[Optional[str]] = mapped_column(sa.String(2048))
     folder: Mapped[Optional[str]] = mapped_column(sa.String(255))
     create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
-    is_active: Mapped[bool] = mapped_column(sa.Boolean, default=True)
+    active: Mapped[bool] = mapped_column(sa.Boolean, default=True)
+    deleted: Mapped[bool] = mapped_column(sa.Boolean, default=False)
 
     _password: Mapped[str] = mapped_column(sa.String(255), name='password')
 
     parent: Mapped[Optional['VaultEntry']] = relationship(
-        remote_side='VaultEntry.id', lazy='joined', innerjoin=True, single_parent=True,
-        cascade='all, delete-orphan')
+        remote_side='VaultEntry.id', single_parent=True, cascade='all, delete-orphan')
     tags: Mapped[list['Tag']] = relationship(secondary='vault_tag', back_populates='entries')
 
     # noinspection PyShadowingBuiltins
@@ -52,7 +52,8 @@ class VaultEntry(Model):
             website=None,
             notes=None,
             folder=None,
-            is_active=None,
+            active=None,
+            deleted=None,
             create_time=None,
             stfu=False,
             _encryptionkey=None,
@@ -70,7 +71,8 @@ class VaultEntry(Model):
             website (str | None):
             notes (str | None):
             folder (str | None):
-            is_active (bool | None):
+            active (bool | None):
+            deleted (bool | None):
             create_time (datetime | None):
             stfu (bool):
             _encryptionkey (str | None):
@@ -82,8 +84,10 @@ class VaultEntry(Model):
         if not stfu:
             raise TypeError('You dont know what you are doing! Use create classmethod instead.')
 
-        if is_active is None:
-            is_active = True
+        if active is None:
+            active = True
+        if deleted is None:
+            deleted = False
 
         # noinspection PyTypeChecker
         self.id = id
@@ -104,7 +108,9 @@ class VaultEntry(Model):
         # noinspection PyTypeChecker
         self.folder = folder
         # noinspection PyTypeChecker
-        self.is_active = is_active
+        self.active = active
+        # noinspection PyTypeChecker
+        self.deleted = deleted
         # noinspection PyTypeChecker
         self.create_time = create_time
         self._encryptionkey = _encryptionkey
@@ -177,7 +183,8 @@ class VaultEntry(Model):
             'website': obj.website,
             'notes': obj.notes,
             'folder': obj.folder,
-            'is_active': obj.is_active,
+            'active': obj.active,
+            'deleted': obj.deleted,
             'stfu': True,
         }
         if hasattr(obj, '_encryptionkey'):
@@ -195,7 +202,7 @@ class VaultEntry(Model):
                 f'title={self.title}, '
                 f'website={self.website}), '
                 f'folder={self.folder}, '
-                f'is_active={self.is_active}')
+                f'active={self.active}')
 
     @property
     def password(self):
@@ -237,7 +244,7 @@ class VaultEntry(Model):
         self._encryptionkey = __value
 
     _crit_whitelist = {
-        'id', 'user_id', 'username', 'title', 'website', 'notes', 'folder', 'create_time', 'is_active'}
+        'id', 'user_id', 'username', 'title', 'website', 'notes', 'folder', 'create_time', 'active', 'deleted'}
 
     _update_whitelist = {
         'username', 'password', 'title', 'website', 'notes', 'folder'}
