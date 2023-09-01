@@ -64,6 +64,10 @@ Database connection string should be configured using the environment variable `
 Should be set to something like: `{protocol}://{dbuser}:{dbpass}@{host}:{port}/{dbname}`, eg.:
 `postgresql+psycopg2://mypass:MyPassWord@localhost:5432/mypass`
 
+### Basic test env configuration
+
+`FLASK_ENV=Development;MYPASS_DB_CONNECTION_URI=sqlite+pysqlite:///:memory:;MYPASS_TESTENV=1`
+
 ### Setup in PostgreSQL
 `postgresql+psycopg2://mypass:MyPassWord@localhost:5432/mypass`
 

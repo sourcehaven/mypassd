@@ -1,4 +1,3 @@
-import flask
 from flask import Blueprint, request
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
 from loguru import logger
@@ -12,15 +11,23 @@ AuthApi = Blueprint('auth', __name__)
 @AuthApi.route('/api/auth/registration', methods=['POST'])
 def registration():
     request_json = request.json
-    db_utils.insert_user(**request_json)
-    return flask.redirect(flask.url_for('auth.login', _method='POST', registration=True), 307)
+    user = db_utils.insert_user(**request_json)
+    username = request_json['username']
+    password = request_json['password']
+    token = user.token
+    uid = user.id
+    identity = {IDENTITY_UID: uid, IDENTITY_USER: username, IDENTITY_PW: password, IDENTITY_TOK: token}
+    logger.debug(f'Registering user with identity:\n    {identity["username"]}')
+    access_token = create_access_token(identity=identity, fresh=True)
+    refresh_token = create_refresh_token(identity=identity)
+    tokens = {'access_token': access_token, 'refresh_token': refresh_token, 'token': token}
+    return tokens, 201
 
 
 @AuthApi.route('/api/auth/login', methods=['POST'])
 @jwt_required(optional=True)
 def login():
     request_json = request.json
-    request_args = request.args
     username = request_json['username']
     password = request_json['password']
     user = db_utils.get_user_login(username=username, password=password)
@@ -32,9 +39,6 @@ def login():
     access_token = create_access_token(identity=identity, fresh=True)
     refresh_token = create_refresh_token(identity=identity)
     tokens = {'access_token': access_token, 'refresh_token': refresh_token}
-    # TODO: is using request args safe? This could be bypassed easily (only for registered user).
-    if 'registration' in request_args:
-        tokens['token'] = token
     return tokens, 201
 
 
