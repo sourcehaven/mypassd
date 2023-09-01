@@ -1,5 +1,7 @@
 from datetime import datetime
+from typing import Iterable
 
+import sqlalchemy as sa
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 from mypass.crypto import checkpw
@@ -66,7 +68,7 @@ def insert_vault_entry(
     return entry
 
 
-def select_vault_entry(
+def _vault_query(
         id: int = ...,
         user_id: int = ...,
         username: str = ...,
@@ -74,14 +76,64 @@ def select_vault_entry(
         website: str = ...,
         notes: str = ...,
         folder: str = ...,
-        create_time: datetime | str = ...,
+        created_at: datetime | str = ...,
+        deleted_at: datetime | str = ...,
         active: bool = ...,
         deleted: bool = ...
 ):
+    if isinstance(created_at, str):
+        created_at = datetime.fromisoformat(created_at)
+    if isinstance(deleted_at, str):
+        deleted_at = datetime.fromisoformat(deleted_at)
     crit = VaultEntry.map_criterion({
-        'id': id, 'user_id': user_id, 'username': username, 'title': title, 'website': website,
-        'notes': notes, 'folder': folder, 'create_time': create_time, 'active': active, 'deleted': deleted})
-    return db.session.query(VaultEntry).filter_by(**crit).all()
+        'user_id': user_id, 'username': username, 'title': title, 'website': website,
+        'notes': notes, 'folder': folder, 'created_at': created_at, 'deleted_at': deleted_at,
+        'active': active, 'deleted': deleted})
+    query = db.session.query(VaultEntry)
+    if id is not ...:
+        if isinstance(id, Iterable) and not isinstance(id, (bytes, str)):
+            expr = VaultEntry.id.in_(set(id))
+        else:
+            expr = VaultEntry.id == id
+        query = query.filter(expr)
+
+    return query.filter_by(**crit)
+
+
+def get_vault_entry(
+        id: int,
+        user_id: int = ...,
+        username: str = ...,
+        title: str = ...,
+        website: str = ...,
+        notes: str = ...,
+        folder: str = ...,
+        created_at: datetime | str = ...,
+        deleted_at: datetime | str = ...,
+        active: bool = ...,
+        deleted: bool = ...
+):
+    return _vault_query(
+        id=id, user_id=user_id, username=username, title=title, website=website, notes=notes, folder=folder,
+        created_at=created_at, deleted_at=deleted_at, active=active, deleted=deleted).one()
+
+
+def select_vault_entry(
+        id: int | Iterable[int] = ...,
+        user_id: int = ...,
+        username: str = ...,
+        title: str = ...,
+        website: str = ...,
+        notes: str = ...,
+        folder: str = ...,
+        created_at: datetime | str = ...,
+        deleted_at: datetime | str = ...,
+        active: bool = ...,
+        deleted: bool = ...
+):
+    return _vault_query(
+        id=id, user_id=user_id, username=username, title=title, website=website, notes=notes, folder=folder,
+        created_at=created_at, deleted_at=deleted_at, active=active, deleted=deleted).all()
 
 
 def unlock_vault_entry(entry: VaultEntry | list[VaultEntry], enckey: str):
@@ -94,6 +146,7 @@ def unlock_vault_entry(entry: VaultEntry | list[VaultEntry], enckey: str):
 
 
 def update_vault_entry(
+        id: int | Iterable[int] = ...,
         user_id: int = ...,
         username: str = ...,
         title: str = ...,
@@ -102,18 +155,22 @@ def update_vault_entry(
         folder: str = ...,
         active: bool = ...,
         deleted: bool = ...,
-        create_time: datetime | str = ...,
+        created_at: datetime | str = ...,
+        deleted_at: datetime | str = ...,
         new_username: str = ...,
         new_title: str = ...,
         new_website: str = ...,
         new_notes: str = ...,
         new_folder: str = ...,
 ):
-    if isinstance(create_time, str):
-        create_time = datetime.fromisoformat(create_time)
+    if isinstance(created_at, str):
+        created_at = datetime.fromisoformat(created_at)
+    if isinstance(deleted_at, str):
+        deleted_at = datetime.fromisoformat(deleted_at)
     crit = VaultEntry.map_criterion({
         'user_id': user_id, 'username': username, 'title': title, 'website': website,
-        'notes': notes, 'folder': folder, 'create_time': create_time, 'active': active, 'deleted': deleted})
+        'notes': notes, 'folder': folder, 'created_at': created_at, 'deleted_at': deleted_at,
+        'active': active, 'deleted': deleted})
     fields = VaultEntry.map_update({
         'username': new_username, 'title': new_title, 'website': new_website,
         'notes': new_notes, 'folder': new_folder})
@@ -121,7 +178,15 @@ def update_vault_entry(
     if len(fields) == 0:
         return 0
 
-    entries = db.session.query(VaultEntry).filter_by(**crit).all()
+    query = db.session.query(VaultEntry)
+    if id is not ...:
+        if isinstance(id, Iterable) and not isinstance(id, (bytes, str)):
+            expr = VaultEntry.id.in_(set(id))
+        else:
+            expr = VaultEntry.id == id
+        query = query.filter(expr)
+
+    entries = query.filter_by(**crit).all()
     new_entries = [VaultEntry.copy(entry) for entry in entries]
     db.session.add_all(new_entries)
     # we need to get the ids of newly added items
@@ -138,21 +203,32 @@ def update_vault_entry(
 
 
 def delete_vault_entry(
+        id: int | Iterable[int] = ...,
         user_id: int = ...,
         username: str = ...,
         title: str = ...,
         website: str = ...,
         notes: str = ...,
         folder: str = ...,
-        create_time: datetime | str = ...,
+        created_at: datetime | str = ...,
         active: bool = ...,
         deleted: bool = ...
 ):
-    if isinstance(create_time, str):
-        create_time = datetime.fromisoformat(create_time)
+    if isinstance(created_at, str):
+        created_at = datetime.fromisoformat(created_at)
     crit = VaultEntry.map_criterion({
         'user_id': user_id, 'username': username, 'title': title, 'website': website,
-        'notes': notes, 'folder': folder, 'create_time': create_time, 'active': active, 'deleted': deleted})
-    affected_rows = db.session.query(VaultEntry).filter_by(**crit).update(values={'deleted': True, 'active': False})
+        'notes': notes, 'folder': folder, 'created_at': created_at, 'active': active, 'deleted': deleted})
+
+    query = db.session.query(VaultEntry)
+    if id is not ...:
+        if isinstance(id, Iterable) and not isinstance(id, (bytes, str)):
+            expr = VaultEntry.id.in_(set(id))
+        else:
+            expr = VaultEntry.id == id
+        query = query.filter(expr)
+
+    affected_rows = query.filter_by(**crit).update(
+        values={'deleted': True, 'active': False, 'deleted_at': sa.func.now()})
     db.session.commit()
     return affected_rows

@@ -29,7 +29,8 @@ class VaultEntry(Model):
     website: Mapped[Optional[str]] = mapped_column(sa.String(255))
     notes: Mapped[Optional[str]] = mapped_column(sa.String(2048))
     folder: Mapped[Optional[str]] = mapped_column(sa.String(255))
-    create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(sa.DateTime(timezone=True))
     active: Mapped[bool] = mapped_column(sa.Boolean, default=True)
     deleted: Mapped[bool] = mapped_column(sa.Boolean, default=False)
 
@@ -54,7 +55,8 @@ class VaultEntry(Model):
             folder=None,
             active=None,
             deleted=None,
-            create_time=None,
+            created_at=None,
+            deleted_at=None,
             stfu=False,
             _encryptionkey=None,
     ):
@@ -73,7 +75,8 @@ class VaultEntry(Model):
             folder (str | None):
             active (bool | None):
             deleted (bool | None):
-            create_time (datetime | None):
+            created_at (datetime | None):
+            deleted_at (datetime | None):
             stfu (bool):
             _encryptionkey (str | None):
 
@@ -112,7 +115,9 @@ class VaultEntry(Model):
         # noinspection PyTypeChecker
         self.deleted = deleted
         # noinspection PyTypeChecker
-        self.create_time = create_time
+        self.created_at = created_at
+        # noinspection PyTypeChecker
+        self.deleted_at = deleted_at
         self._encryptionkey = _encryptionkey
 
     @classmethod

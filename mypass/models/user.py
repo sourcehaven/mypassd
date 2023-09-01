@@ -19,7 +19,7 @@ class User(Model):
     firstname: Mapped[Optional[str]] = mapped_column(sa.Unicode(255))
     lastname: Mapped[Optional[str]] = mapped_column(sa.Unicode(255))
     email: Mapped[Optional[str]] = mapped_column(sau.EmailType(255))
-    create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
     salt: Mapped[str] = mapped_column(sa.String(255))
 
     _password: Mapped[str] = mapped_column(sa.String(255), name='password')
@@ -80,7 +80,7 @@ class User(Model):
         # noinspection PyTypeChecker
         self.email = email
         # noinspection PyTypeChecker
-        self.create_time = create_time
+        self.created_at = create_time
         self._secretpw = secretpw
 
     @classmethod
@@ -132,7 +132,7 @@ class User(Model):
         return User(
             id=self.id, username=self.username, password=self._password, secretpw=pw, token=self._token,
             salt=self.salt, firstname=self.firstname, lastname=self.lastname, email=self.email,
-            create_time=self.create_time, stfu=True)
+            create_time=self.created_at, stfu=True)
 
     @property
     def token(self):

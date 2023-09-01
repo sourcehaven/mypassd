@@ -22,7 +22,8 @@ class ModelPlusJSONEncoder(JSONEncoder):
                 'parent_id': o.parent_id,
                 'active': o.active,
                 'deleted': o.deleted,
-                'create_time': o.create_time.isoformat()
+                'created_at': o.created_at.isoformat(),
+                'deleted_at': o.deleted_at.isoformat() if o.deleted_at is not None else None
             }
         if isinstance(o, Tag):
             return {
@@ -34,7 +35,7 @@ class ModelPlusJSONEncoder(JSONEncoder):
             return {
                 'id': o.id,
                 'username': o.username,
-                'create_time': o.create_time.isoformat(),
+                'created_at': o.created_at.isoformat(),
                 'email': o.email,
                 'firstname': o.firstname,
                 'lastname': o.lastname
