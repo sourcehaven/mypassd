@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 from mypass.crypto import checkpw
-from mypass.exceptions import WrongPasswordException
+from mypass.exceptions import WrongPasswordException, UserUpdateException
 from mypass.models import User, VaultEntry, TokenBlacklist
 from .db import db
 
@@ -51,6 +51,26 @@ def insert_user(username: str, password: str, firstname: str = None, lastname: s
     db.session.add(user)
     db.session.commit()
     return user
+
+
+def update_user(
+        id: int,
+        password: str = ...,
+        new_password: str = ...,
+        new_firstname: str = ...,
+        new_lastname: str = ...,
+        new_email: str = ...
+):
+    if isinstance(new_password, str) and not isinstance(password, str):
+        raise UserUpdateException('Cannot update password if old password is not given.')
+    crit = {'id': id}
+    fields = User.map_update({
+        'password': new_password, 'firstname': new_firstname, 'lastname': new_lastname, 'email': new_email})
+    user = db.session.query(User).filter_by(**crit).one()
+    if isinstance(password, str):
+        user = user.unlock(password)
+    else:
+        fields['']
 
 
 def insert_vault_entry(

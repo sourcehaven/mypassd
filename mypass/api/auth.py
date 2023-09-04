@@ -63,3 +63,13 @@ def logout():
         return '', 204
     except KeyError:
         return '', 409
+
+
+@AuthApi.route('/api/auth/update', methods=['POST'])
+@jwt_required(fresh=True)
+def user_update():
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity, fresh=False)
+    return {
+        'access_token': access_token
+    }, 201

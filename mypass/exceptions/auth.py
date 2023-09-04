@@ -4,3 +4,7 @@ class AuthException(RuntimeError):
 
 class WrongPasswordException(AuthException):
     pass
+
+
+class UserUpdateException(AuthException):
+    pass

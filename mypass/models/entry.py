@@ -261,8 +261,8 @@ class VaultEntry(Model):
         return q
 
     @staticmethod
-    def map_update(crit: Mapping):
-        q = querymap(crit)
+    def map_update(fields: Mapping):
+        q = querymap(fields)
         q = {key: q[key] for key in q if key in VaultEntry._update_whitelist}
         return q
 

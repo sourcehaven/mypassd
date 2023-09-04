@@ -1,11 +1,12 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Mapping
 
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mypass import crypto
+from mypass.functional import querymap
 from .base import Model
 from .entry import VaultEntry, Tag
 
@@ -172,3 +173,11 @@ class User(Model):
     @property
     def hashedpassword(self):
         return self._password
+
+    _update_whitelist = {'firstname', 'lastname', 'email', 'password'}
+
+    @staticmethod
+    def map_update(fields: Mapping):
+        q = querymap(fields)
+        q = {key: q[key] for key in q if key in User._update_whitelist}
+        return q

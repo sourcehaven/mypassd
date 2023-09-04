@@ -1,1 +1,1 @@
-from .auth import AuthException, WrongPasswordException
+from .auth import AuthException, UserUpdateException, WrongPasswordException

@@ -3,7 +3,8 @@ import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-secret_key = 'sourcehaven'
+# See https://auth0.com/blog/brute-forcing-hs256-is-possible-the-importance-of-using-strong-keys-to-sign-jwts/
+secret_key = 'sourcehaven'  # TODO: change this to a strong secret key eg.: secrets.token_urlsafe(32)
 expires_delta = datetime.timedelta(minutes=10)
 host = '0.0.0.0'
 port = 5757
