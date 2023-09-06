@@ -1,3 +1,4 @@
 from .auth import AuthApi
-from .vault import VaultApi
 from .teapot import TeapotApi
+from .user import UserApi
+from .vault import VaultApi

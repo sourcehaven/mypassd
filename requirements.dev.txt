@@ -2,7 +2,7 @@
 
 # test and code inspection tools
 flake8
-pytest>=7.4.0
+pytest>=7.4.1
 pytest-dependency>=0.5.1
 assertpy>=1.1
 pytest-cov>=4.1.0

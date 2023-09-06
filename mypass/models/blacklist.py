@@ -1,9 +1,10 @@
 from datetime import datetime
+from typing import Optional
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column
 
-from mypass.models.base import Model
+from .base import Model
 
 
 class TokenBlacklist(Model):
@@ -11,8 +12,9 @@ class TokenBlacklist(Model):
     __table_args__ = {'extend_existing': True}
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    token: Mapped[str] = mapped_column(sa.String(255))
-    create_time: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
+    token: Mapped[str] = mapped_column(sa.String(255), unique=True)
+    expiration: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True))
+    created_at: Mapped[Optional[datetime]] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
 
     def __repr__(self):
         return str(self)
@@ -21,4 +23,5 @@ class TokenBlacklist(Model):
         return (f'{self.__class__.__name__}('
                 f'id={self.id}, '
                 f'token={self.token}, '
-                f'create_time={self.create_time})')
+                f'expiration={self.expiration} '
+                f'created_at={self.created_at})')

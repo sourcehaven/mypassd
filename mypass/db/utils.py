@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 from mypass.crypto import checkpw
-from mypass.exceptions import WrongPasswordException, UserUpdateException
+from mypass.exceptions import WrongPasswordException
 from mypass.models import User, VaultEntry, TokenBlacklist
 from .db import db
 
@@ -39,11 +39,18 @@ def is_blacklisted_token(token):
     return db.session.query(TokenBlacklist.token).filter_by(token=token).first() is not None
 
 
-def insert_blacklist_token(jti: str):
-    tbl = TokenBlacklist(token=jti)
+def revoke_token(jti: str, exp_dt: datetime):
+    tbl = TokenBlacklist(token=jti, expiration=exp_dt)
     db.session.add(tbl)
     db.session.commit()
     return tbl
+
+
+def revoke_tokens(acc_jti: str, ref_jti: str, acc_exp_dt: datetime, ref_exp_dt: datetime):
+    acc_tbl = TokenBlacklist(token=acc_jti, expiration=acc_exp_dt)
+    ref_tbl = TokenBlacklist(token=ref_jti, expiration=ref_exp_dt)
+    db.session.add_all([acc_tbl, ref_tbl])
+    db.session.commit()
 
 
 def insert_user(username: str, password: str, firstname: str = None, lastname: str = None, email: str = None):
@@ -53,24 +60,22 @@ def insert_user(username: str, password: str, firstname: str = None, lastname: s
     return user
 
 
-def update_user(
-        id: int,
-        password: str = ...,
-        new_password: str = ...,
-        new_firstname: str = ...,
-        new_lastname: str = ...,
-        new_email: str = ...
-):
-    if isinstance(new_password, str) and not isinstance(password, str):
-        raise UserUpdateException('Cannot update password if old password is not given.')
+def update_user_data(id: int, new_firstname: str = ..., new_lastname: str = ..., new_email: str = ...):
     crit = {'id': id}
-    fields = User.map_update({
-        'password': new_password, 'firstname': new_firstname, 'lastname': new_lastname, 'email': new_email})
+    fields = User.map_update({'firstname': new_firstname, 'lastname': new_lastname, 'email': new_email})
+    db.session.query(User).filter_by(**crit).update(values=fields)
+    db.session.commit()
+
+
+def update_user_pw(id: int, old_password: str, new_password: str):
+    crit = {'id': id}
     user = db.session.query(User).filter_by(**crit).one()
-    if isinstance(password, str):
-        user = user.unlock(password)
-    else:
-        fields['']
+    user = user.unlock(old_password)
+    user.password = new_password
+    db.session.query(User).filter_by(**crit).update(
+        values={'_password': user.hashedpassword, '_token': user.encryptedtoken, 'salt': user.salt})
+    db.session.commit()
+    return user
 
 
 def insert_vault_entry(

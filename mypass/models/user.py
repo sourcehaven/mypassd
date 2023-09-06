@@ -102,7 +102,7 @@ class User(Model):
         hashed_pw = None
         if password is not None:
             salt = crypto.gensalt()
-            token = crypto.initpw(64)
+            token = crypto.initpw(256)
             secret_token = crypto.encryptsecret(token, pw=password, salt=salt)
             hashed_pw = crypto.hashpw(password, salt)
         return cls(
@@ -167,14 +167,22 @@ class User(Model):
             __value (str): the value that will be salted and hashed to create a password
         """
 
+        salt = crypto.gensalt()
+        token = self.token
         self._secretpw = __value
-        self._password: str = crypto.hashpw(__value, self.salt)
+        self._password: str = crypto.hashpw(__value, salt)
+        self.salt = salt
+        self.token = token
 
     @property
     def hashedpassword(self):
         return self._password
 
-    _update_whitelist = {'firstname', 'lastname', 'email', 'password'}
+    @property
+    def encryptedtoken(self):
+        return self._token
+
+    _update_whitelist = {'firstname', 'lastname', 'email'}
 
     @staticmethod
     def map_update(fields: Mapping):

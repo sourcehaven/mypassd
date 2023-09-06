@@ -8,4 +8,4 @@ cryptography~=41.0.1
 passlib~=1.7.1
 waitress~=2.1.2
 psycopg2-binary~=2.9.7
-loguru~=0.7.0
+loguru~=0.7.1
