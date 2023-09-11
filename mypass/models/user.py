@@ -19,7 +19,7 @@ class User(Model):
     username: Mapped[str] = mapped_column(sa.String(255), unique=True)
     firstname: Mapped[Optional[str]] = mapped_column(sa.Unicode(255))
     lastname: Mapped[Optional[str]] = mapped_column(sa.Unicode(255))
-    email: Mapped[Optional[str]] = mapped_column(sau.EmailType(255))
+    email: Mapped[Optional[str]] = mapped_column(sau.EmailType(255), unique=True)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), server_default=sa.func.now())
     salt: Mapped[str] = mapped_column(sa.String(255))
 

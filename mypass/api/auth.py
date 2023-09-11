@@ -68,6 +68,7 @@ def login():
 def refresh():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity, fresh=False)
+    # TODO: if near expiration return new refresh token
     return {
         'access_token': access_token
     }, 201
