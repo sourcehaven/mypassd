@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Blueprint, request, make_response
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt, \
@@ -63,30 +63,41 @@ def login():
     return resp
 
 
+@AuthApi.route('/api/auth/login', methods=['GET'])
+@jwt_required(refresh=True)
+def get_login():
+    return '', 204
+
+
 @AuthApi.route('/api/auth/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity, fresh=False)
-    # TODO: if near expiration return new refresh token
+    jwt = get_jwt()
+    jti = jwt['jti']
+    exp_dt = datetime.fromtimestamp(jwt['exp'])
+    refresh_token = request.authorization.token
+    # if near expiration return new refresh token
+    if exp_dt - datetime.now() <= timedelta(days=1):
+        refresh_token = create_refresh_token(identity=identity)
+        db_utils.revoke_token(jti=jti, exp_dt=exp_dt)
     return {
-        'access_token': access_token
+        'access_token': access_token,
+        'refresh_token': refresh_token
     }, 201
 
 
 @AuthApi.route('/api/auth/logout', methods=['DELETE'])
-@jwt_required(optional=True)
+@jwt_required(optional=True, verify_type=False)
 def logout():
     logger.debug('Logging out user.')
     try:
-        acc_jwt = get_jwt()
-        acc_jti = acc_jwt['jti']
-        acc_exp_dt = datetime.fromtimestamp(acc_jwt['exp'])
-        ref_jwt = decode_token(request.json['refresh_token'])
-        ref_jti = ref_jwt['jti']
-        ref_exp_dt = datetime.fromtimestamp(ref_jwt['exp'])
-        db_utils.revoke_tokens(acc_jti=acc_jti, ref_jti=ref_jti, acc_exp_dt=acc_exp_dt, ref_exp_dt=ref_exp_dt)
-        logger.debug(f'Tokens: {acc_jti}, {ref_jti} has been successfully blacklisted.')
+        jwt = get_jwt()
+        jti = jwt['jti']
+        exp_dt = datetime.fromtimestamp(jwt['exp'])
+        db_utils.revoke_token(jti=jti, exp_dt=exp_dt)
+        logger.debug(f'{jwt["type"].title()} token {jti} has been successfully blacklisted.')
         return '', 204
     except KeyError:
         return '', 409
