@@ -13,7 +13,7 @@ def vault_add():
     req = request.json
     fields = req.get('fields', {})
     entry = db_utils.insert_vault_entry(**fields)
-    return {'id': entry.id}, 200
+    return {'entry': entry}, 200
 
 
 @VaultApi.route('/api/db/vault/select', methods=['POST'])
